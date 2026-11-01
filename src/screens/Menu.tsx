@@ -4,6 +4,8 @@ import type { Household } from '../lib/households'
 export function Menu({
   households,
   activeId,
+  yourName,
+  onOpenName,
   onSwitch,
   onOpenHousehold,
   onAddHousehold,
@@ -11,6 +13,8 @@ export function Menu({
 }: {
   households: Household[]
   activeId: string
+  yourName: string
+  onOpenName: () => void
   onSwitch: (householdId: string) => void
   onOpenHousehold: () => void
   onAddHousehold: () => void
@@ -51,6 +55,12 @@ export function Menu({
           <li>
             <button className="row-button" onClick={onOpenHousehold}>
               Invite people and manage household
+            </button>
+          </li>
+          <li>
+            <button className="row-button" onClick={onOpenName}>
+              <span>Your name</span>
+              <span className="muted">{yourName}</span>
             </button>
           </li>
           <li>

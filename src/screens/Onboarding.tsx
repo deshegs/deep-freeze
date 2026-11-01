@@ -1,24 +1,37 @@
 import { useState, type FormEvent } from 'react'
+import { NameField } from '../components/NameField'
 import { signOut } from '../lib/auth'
 import { createHousehold, errorText, joinHousehold, parseInviteCode } from '../lib/households'
+import { nameProblem, saveName, type Profile } from '../lib/profile'
 
 // Shown on first run, and from the menu (with onCancel) for an extra household.
 export function Onboarding({
+  profile,
   onReady,
   onCancel,
 }: {
+  profile: Profile | null
   onReady: (householdId: string) => void
   onCancel?: () => void
 }) {
+  const [yourName, setYourName] = useState<string | null>(null)
+  const askForName = profile ? !profile.chosen : false
+  const nameValue = yourName ?? profile?.name ?? ''
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function run(action: () => Promise<string>) {
+    const problem = askForName ? nameProblem(nameValue) : null
+    if (problem) {
+      setError(problem)
+      return
+    }
     setBusy(true)
     setError(null)
     try {
+      if (askForName) await saveName(nameValue)
       onReady(await action())
     } catch (problem) {
       setError(errorText(problem))
@@ -49,6 +62,7 @@ export function Onboarding({
       <div className="card">
         <h1>{onCancel ? 'Another household' : 'Welcome to Deep freeze'}</h1>
         {error && <p className="error" role="alert">{error}</p>}
+        {askForName && <NameField value={nameValue} onChange={setYourName} />}
 
         <form onSubmit={handleCreate} noValidate>
           <h2>Create your household</h2>

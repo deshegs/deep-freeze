@@ -13,12 +13,14 @@ import {
 } from '../lib/items'
 import { Freezer } from './Freezer'
 import { HouseholdScreen } from './HouseholdScreen'
+import type { Profile } from '../lib/profile'
 import { Menu } from './Menu'
+import { NameScreen } from './NameScreen'
 import { Onboarding } from './Onboarding'
 import { OutList } from './OutList'
 
 type Tab = 'freezer' | 'out'
-type Screen = 'main' | 'menu' | 'household' | 'another-household'
+type Screen = 'main' | 'menu' | 'household' | 'another-household' | 'name'
 type Sheet = { item: Item | null } | null
 
 const MESSAGE_MS = 3000
@@ -27,12 +29,14 @@ export function Shell({
   userId,
   households,
   household,
+  profile,
   onSwitch,
   onChanged,
 }: {
   userId: string
   households: Household[]
   household: Household
+  profile: Profile | null
   onSwitch: (householdId: string) => void
   onChanged: (householdId?: string) => Promise<void>
 }) {
@@ -83,6 +87,8 @@ export function Shell({
       <Menu
         households={households}
         activeId={household.id}
+        yourName={profile?.name ?? ''}
+        onOpenName={() => setScreen('name')}
         onSwitch={(householdId) => {
           onSwitch(householdId)
           setScreen('main')
@@ -110,9 +116,20 @@ export function Shell({
     )
   }
 
+  if (screen === 'name') {
+    return (
+      <NameScreen
+        name={profile?.name ?? ''}
+        onSaved={() => onChanged(household.id)}
+        onClose={() => setScreen('menu')}
+      />
+    )
+  }
+
   if (screen === 'another-household') {
     return (
       <Onboarding
+        profile={profile}
         onReady={async (householdId) => {
           setScreen('main')
           await onChanged(householdId)

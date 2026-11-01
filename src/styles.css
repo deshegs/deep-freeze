@@ -248,6 +248,15 @@ button.icon-button {
   gap: 12px;
 }
 
+.name-field {
+  display: grid;
+  gap: 8px;
+}
+
+.name-field .muted {
+  font-size: 0.85rem;
+}
+
 /* App frame */
 .shell {
   min-height: 100dvh;
