@@ -1,0 +1,9 @@
+node_modules
+dist
+.DS_Store
+.vercel
+
+# Secrets and local settings. Only .env.example belongs in git.
+.env
+.env.*
+!.env.example

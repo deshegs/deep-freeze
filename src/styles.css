@@ -1,0 +1,189 @@
+:root {
+  --bg: #eaf2f4;
+  --surface: #ffffff;
+  --ink: #12303b;
+  --muted: #56707b;
+  --line: #c6dae0;
+  --tape: #ead9a2;
+  --tape-ink: #2b2416;
+  --alert: #b93a2a;
+
+  --font-ui: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-marker: 'Permanent Marker', 'Comic Sans MS', cursive;
+  --radius: 14px;
+  --tap: 44px;
+  --nav-height: 72px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1d24;
+    --surface: #15303a;
+    --ink: #e6f0f2;
+    --muted: #9db4bd;
+    --line: #2a4854;
+    --alert: #ff8571;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  line-height: 1.4;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+p {
+  margin: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--alert);
+  font-weight: 600;
+}
+
+:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Forms */
+label {
+  font-weight: 600;
+}
+
+input {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* anything smaller makes iOS zoom in */
+}
+
+button {
+  min-height: var(--tap);
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+button.quiet {
+  color: var(--muted);
+}
+
+/* Centered screens: loading, sign-in, setup */
+.centered {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 16px;
+}
+
+.card {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: 380px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.card form {
+  display: grid;
+  gap: 12px;
+}
+
+/* App frame */
+.shell {
+  min-height: 100dvh;
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
+}
+
+.app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(16px + env(safe-area-inset-top)) 16px 12px;
+}
+
+.empty {
+  padding: 64px 16px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.bottom-nav {
+  position: fixed;
+  inset: auto 0 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: calc(var(--nav-height) + env(safe-area-inset-bottom));
+  padding: 0 16px env(safe-area-inset-bottom);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.bottom-nav button {
+  color: var(--muted);
+}
+
+.bottom-nav button[aria-current='page'] {
+  color: var(--ink);
+}
+
+.bottom-nav .add-button {
+  width: 60px;
+  height: 60px;
+  margin-top: -24px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 2rem;
+  line-height: 1;
+}
