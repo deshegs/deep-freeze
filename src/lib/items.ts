@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { USE_SOON_DAYS } from '../config'
 import { errorText, failure } from './households'
+import {
+  newId,
+  photoPath,
+  preloadPhotos,
+  removePhoto,
+  uploadPhoto,
+  type PhotoChange,
+} from './photos'
 import { supabase } from './supabase'
 
 export type Item = {
@@ -107,8 +115,13 @@ export function useItems(householdId: string) {
       .select('*')
       .eq('household_id', householdId)
       .is('deleted_at', null)
-    if (problem) setError(errorText(failure(problem)))
-    else setItems(data as Item[])
+    if (problem) {
+      setError(errorText(failure(problem)))
+    } else {
+      const list = data as Item[]
+      await preloadPhotos(list.flatMap((item) => item.photo_path ?? []))
+      setItems(list)
+    }
     setLoading(false)
   }, [householdId])
 
@@ -144,21 +157,43 @@ export function useItems(householdId: string) {
     }
   }
 
-  async function add(fields: ItemFields) {
+  async function add(fields: ItemFields, photo: PhotoChange) {
+    const id = newId()
+    const path = photo instanceof Blob ? photoPath(householdId, id) : null
+    if (path) await uploadPhoto(path, photo as Blob)
+
     const { data, error: problem } = await supabase
       .from('items')
-      .insert({ ...fields, household_id: householdId })
+      .insert({ ...fields, id, household_id: householdId, photo_path: path })
       .select()
       .single()
-    if (problem) throw failure(problem)
+    if (problem) {
+      if (path) await removePhoto(path).catch(() => {})
+      throw failure(problem)
+    }
     setItems((current) => [...current, data as Item])
   }
 
-  async function save(item: Item, fields: ItemFields) {
+  async function save(item: Item, fields: ItemFields, photo: PhotoChange) {
     const { quantity, ...details } = fields
-    const { error: problem } = await supabase.from('items').update(details).eq('id', item.id)
+    let photo_path = item.photo_path
+    if (photo instanceof Blob) {
+      photo_path = photoPath(householdId, item.id)
+      await uploadPhoto(photo_path, photo)
+    } else if (photo === 'remove') {
+      photo_path = null
+    }
+
+    const { error: problem } = await supabase
+      .from('items')
+      .update({ ...details, photo_path })
+      .eq('id', item.id)
     if (problem) throw failure(problem)
-    replace(item.id, (current) => ({ ...current, ...details }))
+    replace(item.id, (current) => ({ ...current, ...details, photo_path }))
+
+    // The item no longer points at the file, so a failure here only leaves a
+    // stray file that nobody can see.
+    if (photo === 'remove' && item.photo_path) await removePhoto(item.photo_path).catch(() => {})
     // Sent as a difference so a tap from another phone isn't overwritten.
     if (quantity !== item.quantity) await adjust(item.id, quantity - item.quantity)
   }

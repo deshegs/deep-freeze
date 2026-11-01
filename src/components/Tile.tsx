@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { categoryOf } from '../config'
 import { ageLabel, isUseSoon, type Item } from '../lib/items'
+import { usePhotoUrl } from '../lib/photos'
 import { Stepper } from './Stepper'
 
 export function Tile({
@@ -12,6 +14,8 @@ export function Tile({
   onAdjust: (change: number) => void
 }) {
   const category = categoryOf(item.category)
+  const photo = usePhotoUrl(item.photo_path)
+  const [broken, setBroken] = useState(false)
 
   return (
     <li className="tile">
@@ -21,7 +25,11 @@ export function Tile({
         aria-label={`Edit ${item.name}`}
         onClick={onEdit}
       >
-        <span aria-hidden="true">{category.emoji}</span>
+        {photo && !broken ? (
+          <img src={photo} alt="" loading="lazy" onError={() => setBroken(true)} />
+        ) : (
+          <span aria-hidden="true">{category.emoji}</span>
+        )}
         <span className="tape">{item.name}</span>
       </button>
       <p className={isUseSoon(item) ? 'age age-alert' : 'age'}>{ageLabel(item.added_at)}</p>

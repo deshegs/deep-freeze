@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { CATEGORIES, LOCATIONS } from '../config'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { categoryOf, CATEGORIES, LOCATIONS } from '../config'
 import { errorText } from '../lib/households'
 import type { Item, ItemFields } from '../lib/items'
+import { resizePhoto, usePhotoUrl, type PhotoChange } from '../lib/photos'
 import { Stepper } from './Stepper'
 
 // Keeps the sheet above the on-screen keyboard, which phones draw over the page.
@@ -31,9 +32,14 @@ export function ItemSheet({
   onClose,
 }: {
   item: Item | null
-  onSave: (fields: ItemFields) => Promise<void>
+  onSave: (fields: ItemFields, photo: PhotoChange) => Promise<void>
   onClose: () => void
 }) {
+  const [photo, setPhoto] = useState<PhotoChange>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [preparing, setPreparing] = useState(false)
+  const savedPhoto = usePhotoUrl(item?.photo_path ?? null)
+  const shownPhoto = photo === 'remove' ? null : (preview ?? savedPhoto)
   const [name, setName] = useState(item?.name ?? '')
   const [quantity, setQuantity] = useState(item?.quantity ?? 1)
   const [category, setCategory] = useState(item?.category ?? 'Other')
@@ -53,6 +59,34 @@ export function ItemSheet({
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [onClose])
 
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview)
+    }
+  }, [preview])
+
+  async function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setPreparing(true)
+    setError(null)
+    try {
+      const resized = await resizePhoto(file)
+      setPhoto(resized)
+      setPreview(URL.createObjectURL(resized))
+    } catch (problem) {
+      setError(errorText(problem))
+    } finally {
+      setPreparing(false)
+    }
+  }
+
+  function clearPhoto() {
+    setPreview(null)
+    setPhoto(item?.photo_path ? 'remove' : null)
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     const cleanName = name.trim()
@@ -64,13 +98,16 @@ export function ItemSheet({
     setBusy(true)
     setError(null)
     try {
-      await onSave({
-        name: cleanName,
-        quantity,
-        category,
-        location,
-        notes: notes.trim() || null,
-      })
+      await onSave(
+        {
+          name: cleanName,
+          quantity,
+          category,
+          location,
+          notes: notes.trim() || null,
+        },
+        photo,
+      )
       onClose()
     } catch (problem) {
       setError(errorText(problem))
@@ -100,6 +137,24 @@ export function ItemSheet({
         </header>
 
         <div className="sheet-body">
+          <div className="sheet-photo" style={{ background: categoryOf(category).color }}>
+            {shownPhoto ? (
+              <img src={shownPhoto} alt="" />
+            ) : (
+              <span className="sheet-photo-emoji" aria-hidden="true">{categoryOf(category).emoji}</span>
+            )}
+          </div>
+          <div className="photo-actions">
+            {/* No capture attribute, so phones offer both the camera and the library. */}
+            <label className="file-button">
+              {preparing ? 'Preparing photo…' : shownPhoto ? 'Change photo' : 'Add a photo'}
+              <input type="file" accept="image/*" onChange={handlePhoto} disabled={preparing} />
+            </label>
+            {shownPhoto && (
+              <button type="button" className="quiet" onClick={clearPhoto}>Remove photo</button>
+            )}
+          </div>
+
           <label htmlFor="item-name">Name</label>
           <input
             id="item-name"
@@ -112,7 +167,6 @@ export function ItemSheet({
             maxLength={120}
             aria-invalid={nameMissing}
             aria-describedby={nameMissing ? 'item-name-error' : undefined}
-            autoFocus={!item}
           />
           {nameMissing && (
             <p className="error" id="item-name-error" role="alert">
@@ -163,7 +217,7 @@ export function ItemSheet({
 
         <footer className="sheet-actions">
           {error && <p className="error" role="alert">{error}</p>}
-          <button className="primary" disabled={busy}>
+          <button className="primary" disabled={busy || preparing}>
             {item ? 'Save changes' : 'Add to freezer'}
           </button>
         </footer>

@@ -172,12 +172,12 @@ export function Shell({
           key={sheet.item?.id ?? 'new'}
           item={sheet.item}
           onClose={() => setSheet(null)}
-          onSave={async (fields) => {
+          onSave={async (fields, photo) => {
             if (sheet.item) {
-              await save(sheet.item, fields)
+              await save(sheet.item, fields, photo)
               if (fields.quantity === 0) showToast(`${fields.name} moved to Out`)
             } else {
-              await add(fields)
+              await add(fields, photo)
               setTab('freezer')
             }
           }}

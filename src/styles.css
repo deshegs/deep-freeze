@@ -338,6 +338,14 @@ button.icon-button {
   line-height: 1.2;
 }
 
+.tile-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .tape {
   position: absolute;
   right: 8px;
@@ -494,6 +502,57 @@ button.icon-button {
 .sheet-body label,
 .sheet-body .field-label {
   margin-top: 6px;
+}
+
+.sheet-photo {
+  display: grid;
+  place-items: center;
+  height: 120px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.sheet-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sheet-photo-emoji {
+  font-size: 2.6rem;
+}
+
+.photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sheet-body .file-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.file-button input {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-button:focus-within {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
 }
 
 .sheet-actions {
