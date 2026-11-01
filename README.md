@@ -77,7 +77,7 @@ The 5 MB photo limit is set on the `item-photos` bucket, under **Storage**.
 
 1. In Supabase, click **SQL Editor**, then **New query**.
 2. Paste the whole file and click **Run**.
-3. You should see an error reading **ALL 46 CHECKS PASSED**. That error is deliberate: it undoes everything, so no test data is saved. Anything starting with **FAILED** lists what needs fixing.
+3. You should see an error reading **ALL 49 CHECKS PASSED**. That error is deliberate: it undoes everything, so no test data is saved. Anything starting with **FAILED** lists what needs fixing.
 
 ## Future options
 

@@ -35,7 +35,7 @@ function recall(key: string) {
 }
 
 // Household rules raise plain-language messages (code P0001), shown as written.
-function failure(error: { code?: string; message: string }) {
+export function failure(error: { code?: string; message: string }) {
   return new Error(
     error.code === 'P0001'
       ? error.message

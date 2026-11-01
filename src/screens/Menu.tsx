@@ -6,12 +6,14 @@ export function Menu({
   activeId,
   onSwitch,
   onOpenHousehold,
+  onAddHousehold,
   onClose,
 }: {
   households: Household[]
   activeId: string
   onSwitch: (householdId: string) => void
   onOpenHousehold: () => void
+  onAddHousehold: () => void
   onClose: () => void
 }) {
   return (
@@ -36,6 +38,11 @@ export function Menu({
               </button>
             </li>
           ))}
+          <li>
+            <button className="row-button" onClick={onAddHousehold}>
+              Create or join another household
+            </button>
+          </li>
         </ul>
       </section>
 

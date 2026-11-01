@@ -2,7 +2,14 @@ import { useState, type FormEvent } from 'react'
 import { signOut } from '../lib/auth'
 import { createHousehold, errorText, joinHousehold, parseInviteCode } from '../lib/households'
 
-export function Onboarding({ onReady }: { onReady: (householdId: string) => void }) {
+// Shown on first run, and from the menu (with onCancel) for an extra household.
+export function Onboarding({
+  onReady,
+  onCancel,
+}: {
+  onReady: (householdId: string) => void
+  onCancel?: () => void
+}) {
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
@@ -40,7 +47,7 @@ export function Onboarding({ onReady }: { onReady: (householdId: string) => void
   return (
     <main className="centered">
       <div className="card">
-        <h1>Welcome to Deep freeze</h1>
+        <h1>{onCancel ? 'Another household' : 'Welcome to Deep freeze'}</h1>
         {error && <p className="error" role="alert">{error}</p>}
 
         <form onSubmit={handleCreate} noValidate>
@@ -71,7 +78,11 @@ export function Onboarding({ onReady }: { onReady: (householdId: string) => void
           <button className="secondary" disabled={busy}>Join household</button>
         </form>
 
-        <button className="quiet" onClick={signOut}>Sign out</button>
+        {onCancel ? (
+          <button className="quiet" onClick={onCancel}>Back to menu</button>
+        ) : (
+          <button className="quiet" onClick={signOut}>Sign out</button>
+        )}
       </div>
     </main>
   )

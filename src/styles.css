@@ -92,7 +92,13 @@ label {
   font-weight: 600;
 }
 
-input {
+.field-label {
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
   width: 100%;
   min-height: var(--tap);
   padding: 10px 12px;
@@ -257,9 +263,246 @@ button.icon-button {
 }
 
 .empty {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
   padding: 64px 16px;
   color: var(--muted);
   text-align: center;
+}
+
+.empty-emoji {
+  font-size: 3rem;
+}
+
+/* Freezer */
+.filters {
+  display: grid;
+  gap: 10px;
+  padding: 0 16px 12px;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  margin: 0 -16px;
+  padding: 0 16px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chip {
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.chip[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0 16px 16px;
+  list-style: none;
+}
+
+.tile {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding-bottom: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.tile-photo {
+  position: relative;
+  display: grid;
+  place-items: start center;
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 14px 0 0;
+  border-radius: 0;
+  font-size: 2.6rem;
+  line-height: 1.2;
+}
+
+.tape {
+  position: absolute;
+  right: 8px;
+  bottom: -12px;
+  left: 8px;
+  display: -webkit-box;
+  padding: 4px 8px;
+  overflow: hidden;
+  background: var(--tape);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  color: var(--tape-ink);
+  font-family: var(--font-marker);
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  transform: rotate(-1.5deg);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.tile:nth-child(even) .tape {
+  transform: rotate(1.2deg);
+}
+
+.age {
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.age-alert {
+  color: var(--alert);
+  font-weight: 700;
+}
+
+.stepper {
+  display: grid;
+  grid-template-columns: var(--tap) 1fr var(--tap);
+  align-items: center;
+  max-width: 200px;
+  padding: 0 6px;
+  text-align: center;
+}
+
+.tile .stepper {
+  width: 100%;
+  max-width: none;
+}
+
+.stepper button {
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 1.3rem;
+}
+
+.stepper output {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* Out */
+.out-list {
+  padding: 0 16px 16px;
+}
+
+.out-list .row {
+  flex-wrap: nowrap;
+}
+
+.out-list .row-text {
+  flex-basis: 0;
+}
+
+.out-list button {
+  flex: none;
+}
+
+.out-emoji {
+  font-size: 1.5rem;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  z-index: 20;
+  right: 16px;
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 12px);
+  left: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 528px;
+  min-height: var(--tap);
+  margin: 0 auto;
+  padding: 6px 8px 6px 14px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.toast button {
+  flex: none;
+  text-decoration: underline;
+}
+
+/* Add and edit sheet */
+.sheet-layer {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+}
+
+.sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.45);
+}
+
+.sheet {
+  position: absolute;
+  right: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: 560px;
+  margin: 0 auto;
+  border-radius: 18px 18px 0 0;
+  background: var(--surface);
+}
+
+.sheet-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 8px 10px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sheet-body {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 8px;
+  min-height: 0;
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sheet-body label,
+.sheet-body .field-label {
+  margin-top: 6px;
+}
+
+.sheet-actions {
+  display: grid;
+  flex: none;
+  gap: 8px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
 }
 
 .bottom-nav {

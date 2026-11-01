@@ -71,6 +71,7 @@ function HouseholdGate({
 
   return (
     <Shell
+      key={active.id}
       userId={session.user.id}
       households={households}
       household={active}
