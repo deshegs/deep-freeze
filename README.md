@@ -54,7 +54,30 @@ Coming in milestone 9, with a one-click deploy button.
 
 ## Invite people to your household
 
-Coming in milestone 2.
+1. Open the menu (☰ at the top right) and tap **Invite people and manage household**.
+2. Tap **Create invite link**, then **Copy link**, and send the link to the person you're inviting.
+3. They open it, sign in with their email, and tap **Join household**. They can also paste the link or code on the welcome screen.
+
+Links last 7 days and work for up to 10 people. Any member can create one. Only the owner can cancel invites, remove people, rename the household, or delete it. If the owner leaves, the longest-standing member becomes the owner.
+
+## Change the limits
+
+The server enforces these, so they live in the database. In Supabase, click **Table Editor**, open **app_limits**, and edit the row:
+
+- `max_items_per_household`: 500
+- `max_invites_per_hour`: 10
+- `invite_days`: 7
+- `invite_max_uses`: 10
+
+The 5 MB photo limit is set on the `item-photos` bucket, under **Storage**.
+
+## Check that households are private
+
+`tests/rls.sql` acts as four pretend people and tries to reach data it shouldn't, across items, photos, events, invites and members, both signed in and signed out.
+
+1. In Supabase, click **SQL Editor**, then **New query**.
+2. Paste the whole file and click **Run**.
+3. You should see an error reading **ALL 46 CHECKS PASSED**. That error is deliberate: it undoes everything, so no test data is saved. Anything starting with **FAILED** lists what needs fixing.
 
 ## Future options
 

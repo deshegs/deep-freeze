@@ -1,20 +1,69 @@
 import { useState } from 'react'
-import { signOut } from '../lib/auth'
+import type { Household } from '../lib/households'
+import { HouseholdScreen } from './HouseholdScreen'
+import { Menu } from './Menu'
 
 type Tab = 'freezer' | 'out'
+type Screen = 'main' | 'menu' | 'household'
 
-// The empty frame of the app. Milestones 2 and 3 fill it in.
-export function Shell({ email }: { email?: string }) {
+// The frame of the app. Milestone 3 fills in the freezer and out lists.
+export function Shell({
+  userId,
+  households,
+  household,
+  onSwitch,
+  onChanged,
+}: {
+  userId: string
+  households: Household[]
+  household: Household
+  onSwitch: (householdId: string) => void
+  onChanged: () => Promise<void>
+}) {
   const [tab, setTab] = useState<Tab>('freezer')
+  const [screen, setScreen] = useState<Screen>('main')
+
+  if (screen === 'menu') {
+    return (
+      <Menu
+        households={households}
+        activeId={household.id}
+        onSwitch={(householdId) => {
+          onSwitch(householdId)
+          setScreen('main')
+        }}
+        onOpenHousehold={() => setScreen('household')}
+        onClose={() => setScreen('main')}
+      />
+    )
+  }
+
+  if (screen === 'household') {
+    return (
+      <HouseholdScreen
+        key={household.id}
+        userId={userId}
+        household={household}
+        onChanged={onChanged}
+        onClose={() => setScreen('menu')}
+        onGone={async () => {
+          setScreen('main')
+          await onChanged()
+        }}
+      />
+    )
+  }
 
   return (
     <div className="shell">
       <header className="app-header">
         <div>
           <h1>Deep freeze</h1>
-          <p className="muted">Signed in as {email}</p>
+          <p className="muted">{household.name}</p>
         </div>
-        <button className="quiet" onClick={signOut}>Sign out</button>
+        <button className="icon-button" aria-label="Open menu" onClick={() => setScreen('menu')}>
+          ☰
+        </button>
       </header>
 
       <main className="empty">
