@@ -10,7 +10,7 @@ You need [Node.js](https://nodejs.org) 22 or newer (the LTS download).
 
 1. Create a Supabase project: go to [supabase.com](https://supabase.com), click **New project**, choose a name and region, and save the database password somewhere safe.
 2. Set up the database: in Supabase, click **SQL Editor**, then **New query**. Paste each file from `supabase/migrations/` in number order and click **Run** after each one.
-3. Add the sign-in code to the emails: in Supabase, go to **Authentication > Emails**. Open the **Magic Link** template, replace its body with the contents of `supabase/email-template.html`, and save. Do the same for the **Confirm signup** template, because new users receive that one.
+3. Add the sign-in code to the emails: first complete [Set up sign-in emails](#set-up-sign-in-emails), because Supabase may lock its templates until a custom email sender is on. Then go to **Authentication > Emails**, open the **Magic Link** template, replace its body with the contents of `supabase/email-template.html`, and save. Do the same for the **Confirm signup** template, because new users receive that one.
 4. Copy `.env.example` to `.env.local`.
 5. Fill in `.env.local`: in Supabase, click **Connect** at the top of the page and copy the project URL and the publishable (or anon) key.
 6. In a terminal, in this folder, run:
