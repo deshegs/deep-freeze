@@ -101,6 +101,7 @@ select rls_test.expect('Bea can''t add to A', rls_test.bea(), 'none', $q$insert 
 select rls_test.expect('Bea can''t change A''s items', rls_test.bea(), 'none', $q$update public.items set name = 'Spy'$q$);
 select rls_test.expect('Bea can''t delete A''s items', rls_test.bea(), 'none', 'delete from public.items');
 select rls_test.expect('Bea can''t change A''s quantity', rls_test.bea(), 'none', $q$select public.adjust_quantity('aaaaaaaa-2222-4000-8000-000000000000', -1)$q$);
+select rls_test.expect('Bea can''t purge A''s items', rls_test.bea(), 'none', $q$select public.purge_deleted_items('aaaaaaaa-0000-4000-8000-000000000000')$q$);
 select rls_test.expect('Bea can''t add events', rls_test.bea(), 'none', $q$insert into public.item_events (household_id, item_id, type) values ('aaaaaaaa-0000-4000-8000-000000000000', 'aaaaaaaa-2222-4000-8000-000000000000', 'add')$q$);
 select rls_test.expect('Bea can''t rename A', rls_test.bea(), 'none', $q$update public.households set name = 'Spy' where id = 'aaaaaaaa-0000-4000-8000-000000000000'$q$);
 select rls_test.expect('Bea can''t delete A', rls_test.bea(), 'none', $q$delete from public.households where id = 'aaaaaaaa-0000-4000-8000-000000000000'$q$);
@@ -133,6 +134,7 @@ select rls_test.expect('Visitor sees no profiles', null, 'none', 'select * from 
 select rls_test.expect('Visitor sees no photos', null, 'none', $q$select * from storage.objects where bucket_id = 'item-photos'$q$);
 select rls_test.expect('Visitor can''t add items', null, 'none', $q$insert into public.items (household_id, name) values ('aaaaaaaa-0000-4000-8000-000000000000', 'Spy')$q$);
 select rls_test.expect('Visitor can''t change quantity', null, 'none', $q$select public.adjust_quantity('aaaaaaaa-2222-4000-8000-000000000000', -1)$q$);
+select rls_test.expect('Visitor can''t purge items', null, 'none', $q$select public.purge_deleted_items('aaaaaaaa-0000-4000-8000-000000000000')$q$);
 select rls_test.expect('Visitor can''t use invites', null, 'none', $q$select public.join_household('rlstestcodea')$q$);
 
 -- Report and undo

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { ItemSheet } from '../components/ItemSheet'
 import { Toast, type ToastMessage } from '../components/Toast'
-import { OUT_UNDO_MS } from '../config'
+import { DELETE_UNDO_MS, OUT_UNDO_MS } from '../config'
 import { errorText, type Household } from '../lib/households'
 import {
   inFreezer,
@@ -40,7 +40,8 @@ export function Shell({
   const [screen, setScreen] = useState<Screen>('main')
   const [sheet, setSheet] = useState<Sheet>(null)
   const [toast, setToast] = useState<ToastMessage | null>(null)
-  const { items, loading, error, reload, adjust, restock, add, save } = useItems(household.id)
+  const { items, loading, error, reload, adjust, restock, add, save, softDelete, restore } =
+    useItems(household.id)
 
   const hideToast = useCallback(() => setToast(null), [])
 
@@ -61,6 +62,15 @@ export function Shell({
         onUndo: () => attempt(adjust(item.id, 1)),
       })
     }
+  }
+
+  function handleDelete(item: Item) {
+    setSheet(null)
+    attempt(softDelete(item.id))
+    showToast(`${item.name} deleted`, {
+      ms: DELETE_UNDO_MS,
+      onUndo: () => attempt(restore(item.id).then(() => showToast('Item restored'))),
+    })
   }
 
   function handleBoughtMore(item: Item) {
@@ -172,6 +182,7 @@ export function Shell({
           key={sheet.item?.id ?? 'new'}
           item={sheet.item}
           onClose={() => setSheet(null)}
+          onDelete={() => sheet.item && handleDelete(sheet.item)}
           onSave={async (fields, photo) => {
             if (sheet.item) {
               await save(sheet.item, fields, photo)

@@ -103,6 +103,63 @@ export function withRestock(item: Item, now = new Date()): Item {
   return { ...item, quantity: 1, added_at: now.toISOString(), out_at: null }
 }
 
+export function withDeleted(item: Item, now = new Date()): Item {
+  return { ...item, deleted_at: now.toISOString() }
+}
+
+export function withRestored(item: Item): Item {
+  return { ...item, deleted_at: null }
+}
+
+export function relativeTime(iso: string, now = new Date()) {
+  const minutes = Math.floor((now.getTime() - new Date(iso).getTime()) / 60_000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${plural(minutes, 'minute')} ago`
+  if (minutes < 24 * 60) return `${plural(Math.floor(minutes / 60), 'hour')} ago`
+  const days = daysSince(iso, now)
+  return days <= 1 ? 'yesterday' : `${plural(days, 'day')} ago`
+}
+
+export async function fetchLastChange(itemId: string) {
+  const { data, error } = await supabase
+    .from('item_events')
+    .select('user_id, created_at')
+    .eq('item_id', itemId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw failure(error)
+  if (!data) return null
+
+  // Someone who has since left the household can no longer be looked up.
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', data.user_id ?? '')
+    .maybeSingle()
+  return {
+    name: (profile?.display_name as string | undefined) ?? 'someone',
+    when: relativeTime(data.created_at as string),
+  }
+}
+
+// Photos go first: once a row is gone, nothing records where its photo was.
+async function purgeExpired(householdId: string) {
+  const { data: limits } = await supabase.from('app_limits').select('deleted_item_days').single()
+  if (!limits) return
+  const cutoff = new Date(Date.now() - limits.deleted_item_days * DAY_MS).toISOString()
+
+  const { data: expired } = await supabase
+    .from('items')
+    .select('photo_path')
+    .eq('household_id', householdId)
+    .lt('deleted_at', cutoff)
+  if (!expired?.length) return
+
+  await Promise.all(expired.flatMap((item) => item.photo_path ?? []).map(removePhoto))
+  await supabase.rpc('purge_deleted_items', { target: householdId })
+}
+
 export function useItems(householdId: string) {
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
@@ -129,6 +186,11 @@ export function useItems(householdId: string) {
     reload()
   }, [reload])
 
+  useEffect(() => {
+    // Housekeeping: anything that fails is simply tried again next time.
+    purgeExpired(householdId).catch(() => {})
+  }, [householdId])
+
   function replace(id: string, change: (item: Item) => Item) {
     setItems((current) => current.map((item) => (item.id === id ? change(item) : item)))
   }
@@ -150,6 +212,31 @@ export function useItems(householdId: string) {
     const { error: problem } = await supabase
       .from('items')
       .update({ quantity: 1, added_at: now.toISOString() })
+      .eq('id', id)
+    if (problem) {
+      await reload()
+      throw failure(problem)
+    }
+  }
+
+  async function softDelete(id: string) {
+    const now = new Date()
+    replace(id, (item) => withDeleted(item, now))
+    const { error: problem } = await supabase
+      .from('items')
+      .update({ deleted_at: now.toISOString() })
+      .eq('id', id)
+    if (problem) {
+      await reload()
+      throw failure(problem)
+    }
+  }
+
+  async function restore(id: string) {
+    replace(id, withRestored)
+    const { error: problem } = await supabase
+      .from('items')
+      .update({ deleted_at: null })
       .eq('id', id)
     if (problem) {
       await reload()
@@ -198,5 +285,5 @@ export function useItems(householdId: string) {
     if (quantity !== item.quantity) await adjust(item.id, quantity - item.quantity)
   }
 
-  return { items, loading, error, reload, adjust, restock, add, save }
+  return { items, loading, error, reload, adjust, restock, add, save, softDelete, restore }
 }

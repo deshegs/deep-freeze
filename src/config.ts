@@ -3,6 +3,7 @@
 
 export const USE_SOON_DAYS = 90
 export const OUT_UNDO_MS = 4000
+export const DELETE_UNDO_MS = 7000
 export const PHOTO_WIDTH = 1000
 export const PHOTO_QUALITY = 0.75
 

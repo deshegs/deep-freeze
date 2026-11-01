@@ -555,6 +555,17 @@ button.icon-button {
   outline-offset: 2px;
 }
 
+.last-change {
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
+
+.action-pair {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 8px;
+}
+
 .sheet-actions {
   display: grid;
   flex: none;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { categoryOf, CATEGORIES, LOCATIONS } from '../config'
 import { errorText } from '../lib/households'
-import type { Item, ItemFields } from '../lib/items'
+import { fetchLastChange, type Item, type ItemFields } from '../lib/items'
 import { resizePhoto, usePhotoUrl, type PhotoChange } from '../lib/photos'
 import { Stepper } from './Stepper'
 
@@ -29,12 +29,16 @@ function useKeyboardOffset() {
 export function ItemSheet({
   item,
   onSave,
+  onDelete,
   onClose,
 }: {
   item: Item | null
   onSave: (fields: ItemFields, photo: PhotoChange) => Promise<void>
+  onDelete: () => void
   onClose: () => void
 }) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [lastChange, setLastChange] = useState<{ name: string; when: string } | null>(null)
   const [photo, setPhoto] = useState<PhotoChange>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [preparing, setPreparing] = useState(false)
@@ -64,6 +68,11 @@ export function ItemSheet({
       if (preview) URL.revokeObjectURL(preview)
     }
   }, [preview])
+
+  useEffect(() => {
+    // Nice to have, so a failure just leaves the line out.
+    if (item) fetchLastChange(item.id).then(setLastChange, () => {})
+  }, [item])
 
   async function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -213,13 +222,46 @@ export function ItemSheet({
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
           />
+
+          {lastChange && (
+            <p className="muted last-change">
+              Last changed by {lastChange.name}, {lastChange.when}
+            </p>
+          )}
         </div>
 
         <footer className="sheet-actions">
           {error && <p className="error" role="alert">{error}</p>}
-          <button className="primary" disabled={busy || preparing}>
-            {item ? 'Save changes' : 'Add to freezer'}
-          </button>
+          {confirmingDelete && item ? (
+            <>
+              <p role="alert">Delete "{item.name}"? You can undo for a few seconds.</p>
+              <div className="action-pair">
+                <button type="button" className="destructive" onClick={onDelete}>
+                  Yes, delete
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setConfirmingDelete(false)}
+                >
+                  Keep item
+                </button>
+              </div>
+            </>
+          ) : item ? (
+            <div className="action-pair">
+              <button className="primary" disabled={busy || preparing}>Save changes</button>
+              <button
+                type="button"
+                className="destructive-quiet"
+                onClick={() => setConfirmingDelete(true)}
+              >
+                Delete
+              </button>
+            </div>
+          ) : (
+            <button className="primary" disabled={busy || preparing}>Add to freezer</button>
+          )}
         </footer>
       </form>
     </div>

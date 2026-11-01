@@ -7,10 +7,13 @@ import {
   isUseSoon,
   outOfFreezer,
   ranOutLabel,
+  relativeTime,
   summary,
   USE_SOON,
+  withDeleted,
   withQuantityChange,
   withRestock,
+  withRestored,
   type Item,
 } from '../src/lib/items'
 
@@ -140,6 +143,36 @@ describe('moving to Out and back', () => {
   it('bought more restarts the age', () => {
     const item = withRestock(makeItem({ quantity: 0, out_at: daysAgo(2) }), now)
     expect(item).toMatchObject({ quantity: 1, out_at: null, added_at: now.toISOString() })
+  })
+})
+
+describe('delete and undo', () => {
+  it('hides a deleted item from both lists', () => {
+    const inside = withDeleted(makeItem({ quantity: 2 }), now)
+    const used = withDeleted(makeItem({ quantity: 0 }), now)
+    expect(inFreezer([inside])).toEqual([])
+    expect(outOfFreezer([used])).toEqual([])
+  })
+
+  it('undo restores the item exactly', () => {
+    const start = makeItem({ quantity: 3, photo_path: 'home/peas.jpg', added_at: daysAgo(40) })
+    expect(withRestored(withDeleted(start, now))).toEqual(start)
+  })
+})
+
+describe('last changed time', () => {
+  const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60_000).toISOString()
+
+  it.each([
+    [0, 'just now'],
+    [1, '1 minute ago'],
+    [45, '45 minutes ago'],
+    [60, '1 hour ago'],
+    [300, '5 hours ago'],
+    [1500, 'yesterday'],
+    [4400, '3 days ago'],
+  ])('%i minutes reads "%s"', (minutes, label) => {
+    expect(relativeTime(minutesAgo(minutes), now)).toBe(label)
   })
 })
 

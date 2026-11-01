@@ -68,6 +68,9 @@ The server enforces these, so they live in the database. In Supabase, click **Ta
 - `max_invites_per_hour`: 10
 - `invite_days`: 7
 - `invite_max_uses`: 10
+- `deleted_item_days`: 30
+
+Deleted items and their photos are removed for good after `deleted_item_days`. This happens the next time any member opens that household, so there's no scheduled job to set up.
 
 The 5 MB photo limit is set on the `item-photos` bucket, under **Storage**.
 
@@ -77,7 +80,7 @@ The 5 MB photo limit is set on the `item-photos` bucket, under **Storage**.
 
 1. In Supabase, click **SQL Editor**, then **New query**.
 2. Paste the whole file and click **Run**.
-3. You should see an error reading **ALL 49 CHECKS PASSED**. That error is deliberate: it undoes everything, so no test data is saved. Anything starting with **FAILED** lists what needs fixing.
+3. You should see an error reading **ALL 51 CHECKS PASSED**. That error is deliberate: it undoes everything, so no test data is saved. Anything starting with **FAILED** lists what needs fixing.
 
 ## Future options
 
