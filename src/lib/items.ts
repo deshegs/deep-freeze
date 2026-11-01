@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { USE_SOON_DAYS } from '../config'
 import { errorText, failure } from './households'
 import {
@@ -23,6 +23,7 @@ export type Item = {
   added_at: string
   out_at: string | null
   deleted_at: string | null
+  updated_at: string
 }
 
 export type ItemFields = Pick<Item, 'name' | 'quantity' | 'category' | 'location' | 'notes'>
@@ -111,6 +112,15 @@ export function withRestored(item: Item): Item {
   return { ...item, deleted_at: null }
 }
 
+// Applies a change from the server. Messages can arrive out of order, so one
+// older than what's on screen is ignored.
+export function withRemoteChange(items: Item[], row: Item) {
+  const current = items.find((item) => item.id === row.id)
+  if (!current) return [...items, row]
+  if (new Date(row.updated_at) < new Date(current.updated_at)) return items
+  return items.map((item) => (item.id === row.id ? row : item))
+}
+
 export function relativeTime(iso: string, now = new Date()) {
   const minutes = Math.floor((now.getTime() - new Date(iso).getTime()) / 60_000)
   if (minutes < 1) return 'just now'
@@ -164,6 +174,7 @@ export function useItems(householdId: string) {
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const sending = useRef(new Map<string, number>())
 
   const reload = useCallback(async () => {
     setError(null)
@@ -191,57 +202,90 @@ export function useItems(householdId: string) {
     purgeExpired(householdId).catch(() => {})
   }, [householdId])
 
+  useEffect(() => {
+    let connectedBefore = false
+    const channel = supabase
+      .channel(`items:${householdId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'items',
+          filter: `household_id=eq.${householdId}`,
+        },
+        (change) => {
+          // Hard deletes only remove items that were already hidden.
+          if (change.eventType === 'DELETE') return
+          const row = change.new as Item
+          // While this phone is still sending, its own screen is the most
+          // current, and the final message will bring it into line.
+          if (sending.current.get(row.id)) return
+          setItems((current) => withRemoteChange(current, row))
+        },
+      )
+      .subscribe((status) => {
+        if (status !== 'SUBSCRIBED') return
+        // Anything sent while the connection was down was missed.
+        if (connectedBefore) reload()
+        connectedBefore = true
+      })
+
+    // Phones suspend the app in the background, so catch up on returning.
+    function catchUp() {
+      if (document.visibilityState === 'visible') reload()
+    }
+    document.addEventListener('visibilitychange', catchUp)
+
+    return () => {
+      document.removeEventListener('visibilitychange', catchUp)
+      supabase.removeChannel(channel)
+    }
+  }, [householdId, reload])
+
   function replace(id: string, change: (item: Item) => Item) {
     setItems((current) => current.map((item) => (item.id === id ? change(item) : item)))
   }
 
   // Tapping must feel instant, so the screen changes first. If the server
   // refuses, the list reloads and the caller shows the reason.
-  async function adjust(id: string, change: number) {
-    replace(id, (item) => withQuantityChange(item, change))
-    const { error: problem } = await supabase.rpc('adjust_quantity', { item_id: id, change })
+  async function send(
+    id: string,
+    request: () => PromiseLike<{ error: { code?: string; message: string } | null }>,
+  ) {
+    sending.current.set(id, (sending.current.get(id) ?? 0) + 1)
+    const { error: problem } = await request()
+    sending.current.set(id, (sending.current.get(id) ?? 1) - 1)
     if (problem) {
       await reload()
       throw failure(problem)
     }
+  }
+
+  async function adjust(id: string, change: number) {
+    replace(id, (item) => withQuantityChange(item, change))
+    await send(id, () => supabase.rpc('adjust_quantity', { item_id: id, change }))
   }
 
   async function restock(id: string) {
     const now = new Date()
     replace(id, (item) => withRestock(item, now))
-    const { error: problem } = await supabase
-      .from('items')
-      .update({ quantity: 1, added_at: now.toISOString() })
-      .eq('id', id)
-    if (problem) {
-      await reload()
-      throw failure(problem)
-    }
+    await send(id, () =>
+      supabase.from('items').update({ quantity: 1, added_at: now.toISOString() }).eq('id', id),
+    )
   }
 
   async function softDelete(id: string) {
     const now = new Date()
     replace(id, (item) => withDeleted(item, now))
-    const { error: problem } = await supabase
-      .from('items')
-      .update({ deleted_at: now.toISOString() })
-      .eq('id', id)
-    if (problem) {
-      await reload()
-      throw failure(problem)
-    }
+    await send(id, () =>
+      supabase.from('items').update({ deleted_at: now.toISOString() }).eq('id', id),
+    )
   }
 
   async function restore(id: string) {
     replace(id, withRestored)
-    const { error: problem } = await supabase
-      .from('items')
-      .update({ deleted_at: null })
-      .eq('id', id)
-    if (problem) {
-      await reload()
-      throw failure(problem)
-    }
+    await send(id, () => supabase.from('items').update({ deleted_at: null }).eq('id', id))
   }
 
   async function add(fields: ItemFields, photo: PhotoChange) {

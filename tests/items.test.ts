@@ -12,6 +12,7 @@ import {
   USE_SOON,
   withDeleted,
   withQuantityChange,
+  withRemoteChange,
   withRestock,
   withRestored,
   type Item,
@@ -36,6 +37,7 @@ function makeItem(fields: Partial<Item>): Item {
     added_at: daysAgo(1),
     out_at: null,
     deleted_at: null,
+    updated_at: daysAgo(1),
     ...fields,
   }
 }
@@ -157,6 +159,35 @@ describe('delete and undo', () => {
   it('undo restores the item exactly', () => {
     const start = makeItem({ quantity: 3, photo_path: 'home/peas.jpg', added_at: daysAgo(40) })
     expect(withRestored(withDeleted(start, now))).toEqual(start)
+  })
+})
+
+describe('live changes', () => {
+  const mine = makeItem({ quantity: 3, updated_at: daysAgo(1) })
+
+  it('adds an item someone else just created', () => {
+    const theirs = makeItem({ id: 'soup', name: 'Soup' })
+    expect(withRemoteChange([mine], theirs).map((item) => item.id)).toEqual(['peas', 'soup'])
+  })
+
+  it('applies a newer change', () => {
+    const newer = { ...mine, quantity: 1, updated_at: daysAgo(0) }
+    expect(withRemoteChange([mine], newer)).toEqual([newer])
+  })
+
+  it('ignores a message that arrives late', () => {
+    const older = { ...mine, quantity: 9, updated_at: daysAgo(2) }
+    expect(withRemoteChange([mine], older)).toEqual([mine])
+  })
+
+  it('applies a change with the same time, such as this phone\'s own echo', () => {
+    const echo = { ...mine, notes: 'From the server' }
+    expect(withRemoteChange([mine], echo)).toEqual([echo])
+  })
+
+  it('removes an item someone else deleted from the lists', () => {
+    const deleted = { ...mine, deleted_at: daysAgo(0), updated_at: daysAgo(0) }
+    expect(inFreezer(withRemoteChange([mine], deleted))).toEqual([])
   })
 })
 
