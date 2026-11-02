@@ -60,6 +60,12 @@ Coming in milestone 9, with a one-click deploy button.
 
 Links last 7 days and work for up to 10 people. Any member can create one. Only the owner can cancel invites, remove people, rename the household, or delete it. If the owner leaves, the longest-standing member becomes the owner.
 
+## Install it and use it offline
+
+Open **☰ > Share, QR code and install** for the home screen steps and a printable QR code.
+
+The app opens without a connection and shows the last saved list and photos. Changes need a connection, for now. Saved copies stay on the phone and are removed when you sign out, and all the real data is on the server.
+
 ## Change the limits
 
 The server enforces these, so they live in the database. In Supabase, click **Table Editor**, open **app_limits**, and edit the row:

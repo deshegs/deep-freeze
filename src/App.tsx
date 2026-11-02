@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import type { Session } from '@supabase/supabase-js'
 import { configProblem } from './lib/supabase'
-import { useSession } from './lib/auth'
+import { useUserId } from './lib/auth'
 import { captureInviteFromUrl, clearPendingInvite, useHouseholds } from './lib/households'
 import { useProfile } from './lib/profile'
 import { JoinPrompt } from './screens/JoinPrompt'
@@ -15,15 +14,15 @@ export function App() {
 }
 
 function SignedInGate() {
-  const { session, loading } = useSession()
+  const { userId, loading } = useUserId()
   const [pendingInvite, setPendingInvite] = useState(captureInviteFromUrl)
 
   if (loading) return <main className="centered" aria-busy="true" />
-  if (!session) return <Login />
+  if (!userId) return <Login />
   return (
     <HouseholdGate
-      key={session.user.id}
-      session={session}
+      key={userId}
+      userId={userId}
       pendingInvite={pendingInvite}
       onInviteHandled={() => {
         clearPendingInvite()
@@ -34,16 +33,16 @@ function SignedInGate() {
 }
 
 function HouseholdGate({
-  session,
+  userId,
   pendingInvite,
   onInviteHandled,
 }: {
-  session: Session
+  userId: string
   pendingInvite: string | null
   onInviteHandled: () => void
 }) {
-  const { households, active, setActiveId, loading, error, reload } = useHouseholds(session.user.id)
-  const { profile, reload: reloadProfile } = useProfile(session.user.id)
+  const { households, active, setActiveId, loading, error, reload } = useHouseholds(userId)
+  const { profile, reload: reloadProfile } = useProfile(userId)
 
   async function reloadAll(householdId?: string) {
     await Promise.all([reload(householdId), reloadProfile()])
@@ -79,7 +78,7 @@ function HouseholdGate({
   return (
     <Shell
       key={active.id}
-      userId={session.user.id}
+      userId={userId}
       households={households}
       household={active}
       profile={profile}

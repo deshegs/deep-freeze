@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { failure } from './households'
+import { readCache, writeCache } from './offline'
 import { supabase } from './supabase'
 
 export const MAX_NAME_LENGTH = 40
@@ -19,7 +20,8 @@ export async function saveName(name: string) {
 }
 
 export function useProfile(userId: string) {
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const cacheKey = `profile:${userId}`
+  const [profile, setProfile] = useState<Profile | null>(() => readCache(cacheKey))
 
   const reload = useCallback(async () => {
     const { data } = await supabase
@@ -27,8 +29,11 @@ export function useProfile(userId: string) {
       .select('display_name, name_chosen')
       .eq('id', userId)
       .maybeSingle()
-    if (data) setProfile({ name: data.display_name, chosen: data.name_chosen })
-  }, [userId])
+    if (!data) return
+    const next = { name: data.display_name, chosen: data.name_chosen }
+    writeCache(cacheKey, next)
+    setProfile(next)
+  }, [userId, cacheKey])
 
   useEffect(() => {
     reload()

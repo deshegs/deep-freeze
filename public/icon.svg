@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#12303B"/>
+  <g stroke="#EAF2F4" stroke-width="24" stroke-linecap="round" fill="none" transform="translate(256 206)">
+    <g id="arm"><path d="M0-122V122M0-82l-34-34M0-82l34-34M0 82l-34 34M0 82l34 34"/></g>
+    <g transform="rotate(60)"><path d="M0-122V122M0-82l-34-34M0-82l34-34M0 82l-34 34M0 82l34 34"/></g>
+    <g transform="rotate(120)"><path d="M0-122V122M0-82l-34-34M0-82l34-34M0 82l-34 34M0 82l34 34"/></g>
+  </g>
+  <rect x="86" y="352" width="340" height="62" fill="#EAD9A2" transform="rotate(-3 256 383)"/>
+</svg>

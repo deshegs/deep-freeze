@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { readCache, writeCache } from './offline'
 import { supabase } from './supabase'
 
 export type Role = 'owner' | 'member'
@@ -188,9 +189,12 @@ export async function deleteHousehold(householdId: string) {
 }
 
 export function useHouseholds(userId: string) {
-  const [households, setHouseholds] = useState<Household[]>([])
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const cacheKey = `households:${userId}`
+  const [households, setHouseholds] = useState<Household[]>(() => readCache(cacheKey) ?? [])
+  const [activeId, setActiveId] = useState<string | null>(() =>
+    pickActiveHousehold(readCache(cacheKey) ?? [], recall(LAST_HOUSEHOLD_KEY)),
+  )
+  const [loading, setLoading] = useState(activeId === null)
   const [error, setError] = useState<string | null>(null)
 
   const reload = useCallback(
@@ -198,17 +202,19 @@ export function useHouseholds(userId: string) {
       setError(null)
       try {
         const list = await fetchHouseholds(userId)
+        writeCache(cacheKey, list)
         setHouseholds(list)
         setActiveId((current) =>
           pickActiveHousehold(list, preferredId ?? current ?? recall(LAST_HOUSEHOLD_KEY)),
         )
       } catch (problem) {
-        setError(errorText(problem))
+        // With a saved list, carry on with that instead of stopping the app.
+        if (!readCache(cacheKey)) setError(errorText(problem))
       } finally {
         setLoading(false)
       }
     },
-    [userId],
+    [userId, cacheKey],
   )
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { USE_SOON_DAYS } from '../config'
 import { errorText, failure } from './households'
+import { isOffline, OFFLINE_MESSAGE, readCache, writeCache } from './offline'
 import {
   newId,
   photoPath,
@@ -153,6 +154,10 @@ export async function fetchLastChange(itemId: string) {
   }
 }
 
+function requireConnection() {
+  if (isOffline()) throw new Error(OFFLINE_MESSAGE)
+}
+
 // Photos go first: once a row is gone, nothing records where its photo was.
 async function purgeExpired(householdId: string) {
   const { data: limits } = await supabase.from('app_limits').select('deleted_item_days').single()
@@ -171,11 +176,13 @@ async function purgeExpired(householdId: string) {
 }
 
 export function useItems(householdId: string) {
-  const [items, setItems] = useState<Item[]>([])
-  const [loading, setLoading] = useState(true)
+  const cacheKey = `items:${householdId}`
+  const [items, setItems] = useState<Item[]>(() => readCache(cacheKey) ?? [])
+  const [loading, setLoading] = useState(() => !readCache(cacheKey))
   const [error, setError] = useState<string | null>(null)
   const sending = useRef(new Map<string, number>())
 
+  // Reports whether the server answered, for callers that must undo a change.
   const reload = useCallback(async () => {
     setError(null)
     const { data, error: problem } = await supabase
@@ -184,18 +191,33 @@ export function useItems(householdId: string) {
       .eq('household_id', householdId)
       .is('deleted_at', null)
     if (problem) {
-      setError(errorText(failure(problem)))
+      // With a saved list, keep showing it rather than an error.
+      if (!readCache(cacheKey)) setError(errorText(failure(problem)))
     } else {
       const list = data as Item[]
       await preloadPhotos(list.flatMap((item) => item.photo_path ?? []))
       setItems(list)
+      writeCache(cacheKey, list)
     }
     setLoading(false)
-  }, [householdId])
+    return !problem
+  }, [householdId, cacheKey])
 
   useEffect(() => {
     reload()
+    window.addEventListener('online', reload)
+    return () => window.removeEventListener('online', reload)
   }, [reload])
+
+  useEffect(() => {
+    if (!loading) writeCache(cacheKey, items)
+  }, [items, loading, cacheKey])
+
+  useEffect(() => {
+    // Shows saved photos straight away, without waiting for reload to finish.
+    const saved = readCache<Item[]>(cacheKey) ?? []
+    preloadPhotos(saved.flatMap((item) => item.photo_path ?? [])).catch(() => {})
+  }, [cacheKey])
 
   useEffect(() => {
     // Housekeeping: anything that fails is simply tried again next time.
@@ -251,44 +273,56 @@ export function useItems(householdId: string) {
   // refuses, the list reloads and the caller shows the reason.
   async function send(
     id: string,
+    change: (item: Item) => Item,
     request: () => PromiseLike<{ error: { code?: string; message: string } | null }>,
   ) {
+    requireConnection()
+    const before = items
+    replace(id, change)
     sending.current.set(id, (sending.current.get(id) ?? 0) + 1)
     const { error: problem } = await request()
     sending.current.set(id, (sending.current.get(id) ?? 1) - 1)
     if (problem) {
-      await reload()
+      // Without a connection the list can't reload, so step back by hand.
+      if (!(await reload())) setItems(before)
       throw failure(problem)
     }
   }
 
   async function adjust(id: string, change: number) {
-    replace(id, (item) => withQuantityChange(item, change))
-    await send(id, () => supabase.rpc('adjust_quantity', { item_id: id, change }))
+    await send(
+      id,
+      (item) => withQuantityChange(item, change),
+      () => supabase.rpc('adjust_quantity', { item_id: id, change }),
+    )
   }
 
   async function restock(id: string) {
     const now = new Date()
-    replace(id, (item) => withRestock(item, now))
-    await send(id, () =>
-      supabase.from('items').update({ quantity: 1, added_at: now.toISOString() }).eq('id', id),
+    await send(
+      id,
+      (item) => withRestock(item, now),
+      () => supabase.from('items').update({ quantity: 1, added_at: now.toISOString() }).eq('id', id),
     )
   }
 
   async function softDelete(id: string) {
     const now = new Date()
-    replace(id, (item) => withDeleted(item, now))
-    await send(id, () =>
-      supabase.from('items').update({ deleted_at: now.toISOString() }).eq('id', id),
+    await send(
+      id,
+      (item) => withDeleted(item, now),
+      () => supabase.from('items').update({ deleted_at: now.toISOString() }).eq('id', id),
     )
   }
 
   async function restore(id: string) {
-    replace(id, withRestored)
-    await send(id, () => supabase.from('items').update({ deleted_at: null }).eq('id', id))
+    await send(id, withRestored, () =>
+      supabase.from('items').update({ deleted_at: null }).eq('id', id),
+    )
   }
 
   async function add(fields: ItemFields, photo: PhotoChange) {
+    requireConnection()
     const id = newId()
     const path = photo instanceof Blob ? photoPath(householdId, id) : null
     if (path) await uploadPhoto(path, photo as Blob)
@@ -306,6 +340,7 @@ export function useItems(householdId: string) {
   }
 
   async function save(item: Item, fields: ItemFields, photo: PhotoChange) {
+    requireConnection()
     const { quantity, ...details } = fields
     let photo_path = item.photo_path
     if (photo instanceof Blob) {

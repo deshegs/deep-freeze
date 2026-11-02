@@ -6,6 +6,7 @@ export function Menu({
   activeId,
   yourName,
   onOpenName,
+  onOpenShare,
   onSwitch,
   onOpenHousehold,
   onAddHousehold,
@@ -15,6 +16,7 @@ export function Menu({
   activeId: string
   yourName: string
   onOpenName: () => void
+  onOpenShare: () => void
   onSwitch: (householdId: string) => void
   onOpenHousehold: () => void
   onAddHousehold: () => void
@@ -55,6 +57,11 @@ export function Menu({
           <li>
             <button className="row-button" onClick={onOpenHousehold}>
               Invite people and manage household
+            </button>
+          </li>
+          <li>
+            <button className="row-button" onClick={onOpenShare}>
+              Share, QR code and install
             </button>
           </li>
           <li>

@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { clearOfflineData, isOffline, readCache, writeCache } from './offline'
 import { supabase } from './supabase'
 
 // All sign-in code lives here, so adding Google later means adding one function.
+
+const LAST_USER_KEY = 'last-user'
 
 export function cleanEmail(input: string) {
   return input.trim().toLowerCase()
@@ -51,21 +54,34 @@ export async function verifyCode(email: string, token: string) {
 }
 
 export async function signOut() {
+  await clearOfflineData()
   await supabase.auth.signOut()
 }
 
-export function useSession() {
-  const [session, setSession] = useState<Session | null>(null)
+// Sign-ins expire hourly and renew over the network, so an expired one can't
+// renew offline. The last user is remembered so the saved list still opens.
+export function useUserId() {
+  const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
+    function apply(session: Session | null) {
+      setUserId(session?.user.id ?? null)
+      if (session) writeCache(LAST_USER_KEY, session.user.id)
+    }
+
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (data.session) apply(data.session)
+      else if (error && isOffline()) setUserId(readCache<string>(LAST_USER_KEY))
       setLoading(false)
     })
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next))
+
+    const { data } = supabase.auth.onAuthStateChange((event, next) => {
+      if (next) apply(next)
+      else if (event === 'SIGNED_OUT') apply(null)
+    })
     return () => data.subscription.unsubscribe()
   }, [])
 
-  return { session, loading }
+  return { userId, loading }
 }

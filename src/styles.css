@@ -248,6 +248,51 @@ button.icon-button {
   gap: 12px;
 }
 
+.offline-notice {
+  margin: 0 16px 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.print-area {
+  justify-items: center;
+  padding: 20px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: center;
+}
+
+.qr {
+  width: min(100%, 280px);
+  height: auto;
+  background: #ffffff;
+}
+
+.share-link {
+  overflow-wrap: anywhere;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-area {
+    border: 0;
+  }
+}
+
 .name-field {
   display: grid;
   gap: 8px;

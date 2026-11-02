@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { PHOTO_QUALITY, PHOTO_WIDTH } from '../config'
 import { failure } from './households'
+import { PHOTO_CACHE } from './offline'
 import { supabase } from './supabase'
 
 const BUCKET = 'item-photos'
@@ -68,6 +69,35 @@ function remember(path: string, url: string, lifetimeMs: number) {
   links.set(path, { url, expires: Date.now() + lifetimeMs })
 }
 
+// Temporary links change every time, so saved photos are filed under their
+// storage path. `caches` only exists on https and localhost.
+function savedKey(path: string) {
+  return `/saved-photos/${path}`
+}
+
+async function savePhotoCopy(path: string, photo: Blob) {
+  if (!('caches' in window)) return
+  const cache = await caches.open(PHOTO_CACHE)
+  await cache.put(savedKey(path), new Response(photo))
+}
+
+async function downloadPhotoCopy(path: string, url: string) {
+  if (!('caches' in window)) return
+  const cache = await caches.open(PHOTO_CACHE)
+  if (await cache.match(savedKey(path))) return
+  const response = await fetch(url)
+  if (response.ok) await cache.put(savedKey(path), response)
+}
+
+async function openPhotoCopy(path: string) {
+  if (!('caches' in window)) return false
+  const cache = await caches.open(PHOTO_CACHE)
+  const copy = await cache.match(savedKey(path))
+  if (!copy) return false
+  remember(path, URL.createObjectURL(await copy.blob()), LINK_SECONDS * 1000)
+  return true
+}
+
 export async function uploadPhoto(path: string, photo: Blob) {
   const { error } = await supabase.storage
     .from(BUCKET)
@@ -75,12 +105,19 @@ export async function uploadPhoto(path: string, photo: Blob) {
   if (error) throw failure(error)
   // Shows the new photo straight away, even when it replaces one at the same path.
   remember(path, URL.createObjectURL(photo), LINK_SECONDS * 1000)
+  await savePhotoCopy(path, photo).catch(() => {})
 }
 
 export async function removePhoto(path: string) {
   links.delete(path)
   const { error } = await supabase.storage.from(BUCKET).remove([path])
   if (error) throw failure(error)
+  if ('caches' in window) {
+    await caches
+      .open(PHOTO_CACHE)
+      .then((cache) => cache.delete(savedKey(path)))
+      .catch(() => {})
+  }
 }
 
 function cachedLink(path: string) {
@@ -94,8 +131,15 @@ export async function preloadPhotos(paths: string[]) {
   if (!missing.length) return
   const { data } = await supabase.storage.from(BUCKET).createSignedUrls(missing, LINK_SECONDS)
   data?.forEach((link) => {
-    if (link.path && link.signedUrl) remember(link.path, link.signedUrl, LINK_SECONDS * 1000)
+    if (!link.path || !link.signedUrl) return
+    remember(link.path, link.signedUrl, LINK_SECONDS * 1000)
+    // In the background: saved photos are a bonus, never a reason to wait.
+    downloadPhotoCopy(link.path, link.signedUrl).catch(() => {})
   })
+  // Whatever couldn't get a link, usually from being offline, uses a saved copy.
+  await Promise.all(
+    missing.filter((path) => !cachedLink(path)).map((path) => openPhotoCopy(path).catch(() => false)),
+  )
 }
 
 export function usePhotoUrl(path: string | null) {

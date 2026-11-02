@@ -13,14 +13,16 @@ import {
 } from '../lib/items'
 import { Freezer } from './Freezer'
 import { HouseholdScreen } from './HouseholdScreen'
+import { isOffline, useOnline } from '../lib/offline'
 import type { Profile } from '../lib/profile'
 import { Menu } from './Menu'
 import { NameScreen } from './NameScreen'
 import { Onboarding } from './Onboarding'
 import { OutList } from './OutList'
+import { ShareScreen } from './ShareScreen'
 
 type Tab = 'freezer' | 'out'
-type Screen = 'main' | 'menu' | 'household' | 'another-household' | 'name'
+type Screen = 'main' | 'menu' | 'household' | 'another-household' | 'name' | 'share'
 type Sheet = { item: Item | null } | null
 
 const MESSAGE_MS = 3000
@@ -47,6 +49,8 @@ export function Shell({
   const { items, loading, error, reload, adjust, restock, add, save, softDelete, restore } =
     useItems(household.id)
 
+  const online = useOnline()
+
   const hideToast = useCallback(() => setToast(null), [])
 
   function showToast(text: string, options: Partial<ToastMessage> = {}) {
@@ -60,7 +64,7 @@ export function Shell({
 
   function handleAdjust(item: Item, change: number) {
     attempt(adjust(item.id, change))
-    if (item.quantity + change === 0) {
+    if (item.quantity + change === 0 && !isOffline()) {
       showToast(`${item.name} moved to Out`, {
         ms: OUT_UNDO_MS,
         onUndo: () => attempt(adjust(item.id, 1)),
@@ -71,6 +75,7 @@ export function Shell({
   function handleDelete(item: Item) {
     setSheet(null)
     attempt(softDelete(item.id))
+    if (isOffline()) return
     showToast(`${item.name} deleted`, {
       ms: DELETE_UNDO_MS,
       onUndo: () => attempt(restore(item.id).then(() => showToast('Item restored'))),
@@ -79,7 +84,7 @@ export function Shell({
 
   function handleBoughtMore(item: Item) {
     attempt(restock(item.id))
-    showToast(`${item.name} is back in the freezer`)
+    if (!isOffline()) showToast(`${item.name} is back in the freezer`)
   }
 
   if (screen === 'menu') {
@@ -89,6 +94,7 @@ export function Shell({
         activeId={household.id}
         yourName={profile?.name ?? ''}
         onOpenName={() => setScreen('name')}
+        onOpenShare={() => setScreen('share')}
         onSwitch={(householdId) => {
           onSwitch(householdId)
           setScreen('main')
@@ -114,6 +120,10 @@ export function Shell({
         }}
       />
     )
+  }
+
+  if (screen === 'share') {
+    return <ShareScreen onClose={() => setScreen('menu')} />
   }
 
   if (screen === 'name') {
@@ -156,6 +166,12 @@ export function Shell({
           ☰
         </button>
       </header>
+
+      {!online && (
+        <p className="offline-notice" role="status">
+          Offline. Showing your last saved list.
+        </p>
+      )}
 
       {error && (
         <div className="empty">
