@@ -4,11 +4,11 @@
   "version": "0.1.0",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc --noEmit && vite build",
+    "build": "node scripts/build-setup-sql.mjs && tsc --noEmit && vite build",
     "preview": "vite preview --host",
     "test": "vitest run"
   },

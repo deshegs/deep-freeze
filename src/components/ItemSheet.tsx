@@ -55,7 +55,16 @@ export function ItemSheet({
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const nameInput = useRef<HTMLInputElement>(null)
+  const sheetRef = useRef<HTMLFormElement>(null)
   const keyboardOffset = useKeyboardOffset()
+
+  // Keyboard and screen reader users start in the sheet, and return to where
+  // they were when it closes.
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null
+    sheetRef.current?.focus()
+    return () => previous?.focus?.()
+  }, [])
 
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
@@ -135,6 +144,8 @@ export function ItemSheet({
     <div className="sheet-layer">
       <div className="sheet-backdrop" onClick={onClose} />
       <form
+        ref={sheetRef}
+        tabIndex={-1}
         className="sheet"
         role="dialog"
         aria-modal="true"

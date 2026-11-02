@@ -29,6 +29,9 @@ export function friendlyAuthError(message: string) {
   if (text.includes('rate limit') || text.includes('security purposes')) {
     return 'Too many sign-in emails in a short time. Wait a minute, then try again.'
   }
+  if (text.includes('signups not allowed') || text.includes('signup is disabled')) {
+    return "This is a private freezer. Ask its owner to add your email address."
+  }
   if (text.includes('expired') || text.includes('invalid')) {
     return 'That code did not work or has expired. Check it, or send a new email.'
   }

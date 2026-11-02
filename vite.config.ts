@@ -3,6 +3,14 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        // These change rarely, so app updates don't re-download them.
+        manualChunks: { vendor: ['react', 'react-dom', '@supabase/supabase-js'] },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({

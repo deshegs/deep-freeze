@@ -187,6 +187,8 @@ export function Shell({
 
   return (
     <div className="shell">
+      {/* inert keeps keyboards and screen readers inside the open sheet. */}
+      <div inert={sheet !== null}>
       <header className="app-header">
         <div>
           <h1>Deep freeze</h1>
@@ -242,6 +244,7 @@ export function Shell({
           {out.length ? `Out (${out.length})` : 'Out'}
         </button>
       </nav>
+      </div>
 
       {sheet && (
         <ItemSheet

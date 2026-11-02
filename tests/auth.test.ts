@@ -27,6 +27,12 @@ describe('sign-in input', () => {
   })
 })
 
+describe('private copies', () => {
+  it('explains that sign-up is closed', () => {
+    expect(friendlyAuthError('Signups not allowed for otp')).toMatch(/private freezer/)
+  })
+})
+
 describe('config check', () => {
   it('reports missing settings', () => {
     expect(findConfigProblem(undefined, undefined)).toMatch(/not connected/)
