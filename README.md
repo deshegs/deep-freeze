@@ -152,3 +152,7 @@ The 5 MB photo limit is set on the `item-photos` bucket, under **Storage**.
 - A self-contained backend, such as Docker with SQLite. Not part of v1.
 - Queuing changes made offline, so they sync when the signal returns.
 - A backup ZIP that includes the photos.
+
+## License
+
+[MIT](LICENSE). You are free to run, change and share your own copy.
