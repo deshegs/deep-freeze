@@ -3,6 +3,7 @@ import { categoryOf, CATEGORIES, LOCATIONS } from '../config'
 import { errorText } from '../lib/households'
 import { fetchLastChange, type Item, type ItemFields } from '../lib/items'
 import { resizePhoto, usePhotoUrl, type PhotoChange } from '../lib/photos'
+import { PhotoViewer } from './PhotoViewer'
 import { Stepper } from './Stepper'
 
 // Keeps the sheet above the on-screen keyboard, which phones draw over the page.
@@ -37,6 +38,7 @@ export function ItemSheet({
   onDelete: () => void
   onClose: () => void
 }) {
+  const [viewingPhoto, setViewingPhoto] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [lastChange, setLastChange] = useState<{ name: string; when: string } | null>(null)
   const [photo, setPhoto] = useState<PhotoChange>(null)
@@ -57,11 +59,14 @@ export function ItemSheet({
 
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose()
+      if (event.key !== 'Escape') return
+      // Closes one layer at a time, so the photo goes before the sheet does.
+      if (viewingPhoto) setViewingPhoto(false)
+      else onClose()
     }
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [onClose])
+  }, [onClose, viewingPhoto])
 
   useEffect(() => {
     return () => {
@@ -148,7 +153,9 @@ export function ItemSheet({
         <div className="sheet-body">
           <div className="sheet-photo" style={{ background: categoryOf(category).color }}>
             {shownPhoto ? (
-              <img src={shownPhoto} alt="" />
+              <button type="button" aria-label="Open photo" onClick={() => setViewingPhoto(true)}>
+                <img src={shownPhoto} alt="" />
+              </button>
             ) : (
               <span className="sheet-photo-emoji" aria-hidden="true">{categoryOf(category).emoji}</span>
             )}
@@ -264,6 +271,14 @@ export function ItemSheet({
           )}
         </footer>
       </form>
+
+      {viewingPhoto && shownPhoto && (
+        <PhotoViewer
+          src={shownPhoto}
+          name={name.trim() || 'this item'}
+          onClose={() => setViewingPhoto(false)}
+        />
+      )}
     </div>
   )
 }
