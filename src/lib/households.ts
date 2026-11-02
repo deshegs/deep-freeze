@@ -173,9 +173,9 @@ export async function renameHousehold(householdId: string, name: string) {
   if (error) throw failure(error)
 }
 
-export async function deleteHousehold(householdId: string) {
+// Photos live outside the database, so removing a household can't reach them.
+export async function removeHouseholdPhotos(householdId: string) {
   const photos = supabase.storage.from('item-photos')
-  // Photos live outside the database, so removing the household can't reach them.
   while (true) {
     const { data, error } = await photos.list(householdId, { limit: 100 })
     if (error) throw failure(error)
@@ -183,7 +183,10 @@ export async function deleteHousehold(householdId: string) {
     const removal = await photos.remove(data.map((file) => `${householdId}/${file.name}`))
     if (removal.error) throw failure(removal.error)
   }
+}
 
+export async function deleteHousehold(householdId: string) {
+  await removeHouseholdPhotos(householdId)
   const { error } = await supabase.from('households').delete().eq('id', householdId)
   if (error) throw failure(error)
 }

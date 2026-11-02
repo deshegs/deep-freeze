@@ -293,6 +293,27 @@ button.icon-button {
   }
 }
 
+.plain-list,
+.restore-counts {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.page .file-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
 .name-field {
   display: grid;
   gap: 8px;

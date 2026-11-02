@@ -38,6 +38,7 @@ function makeItem(fields: Partial<Item>): Item {
     out_at: null,
     deleted_at: null,
     updated_at: daysAgo(1),
+    restored_from: null,
     ...fields,
   }
 }

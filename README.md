@@ -66,6 +66,14 @@ Open **☰ > Share, QR code and install** for the home screen steps and a printa
 
 The app opens without a connection and shows the last saved list and photos. Changes need a connection, for now. Saved copies stay on the phone and are removed when you sign out, and all the real data is on the server.
 
+## Back up, restore and delete
+
+Open **☰ > Export and restore** to save a household as a JSON backup or a CSV spreadsheet. Photos aren't included in either.
+
+To restore, choose a JSON backup. You'll see how many items would be added before anything changes, and restoring the same backup twice never creates duplicates. Restoring into a different household works too, but those items come back without their photos.
+
+Anyone can delete their account from **☰ > Privacy and account**. Households where they were the only member are deleted with their items and photos. Shared households carry on, and the longest-standing member takes over if they were the owner.
+
 ## Change the limits
 
 The server enforces these, so they live in the database. In Supabase, click **Table Editor**, open **app_limits**, and edit the row:
@@ -86,7 +94,7 @@ The 5 MB photo limit is set on the `item-photos` bucket, under **Storage**.
 
 1. In Supabase, click **SQL Editor**, then **New query**.
 2. Paste the whole file and click **Run**.
-3. You should see an error reading **ALL 55 CHECKS PASSED**. That error is deliberate: it undoes everything, so no test data is saved. Anything starting with **FAILED** lists what needs fixing.
+3. You should see an error reading **ALL 59 CHECKS PASSED**. That error is deliberate: it undoes everything, so no test data is saved. Anything starting with **FAILED** lists what needs fixing.
 
 ## Future options
 

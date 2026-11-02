@@ -7,6 +7,8 @@ export function Menu({
   yourName,
   onOpenName,
   onOpenShare,
+  onOpenBackup,
+  onOpenPrivacy,
   onSwitch,
   onOpenHousehold,
   onAddHousehold,
@@ -17,6 +19,8 @@ export function Menu({
   yourName: string
   onOpenName: () => void
   onOpenShare: () => void
+  onOpenBackup: () => void
+  onOpenPrivacy: () => void
   onSwitch: (householdId: string) => void
   onOpenHousehold: () => void
   onAddHousehold: () => void
@@ -69,6 +73,12 @@ export function Menu({
               <span>Your name</span>
               <span className="muted">{yourName}</span>
             </button>
+          </li>
+          <li>
+            <button className="row-button" onClick={onOpenBackup}>Export and restore</button>
+          </li>
+          <li>
+            <button className="row-button" onClick={onOpenPrivacy}>Privacy and account</button>
           </li>
           <li>
             <button className="row-button" onClick={signOut}>Sign out</button>

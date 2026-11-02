@@ -25,6 +25,7 @@ export type Item = {
   out_at: string | null
   deleted_at: string | null
   updated_at: string
+  restored_from: string | null
 }
 
 export type ItemFields = Pick<Item, 'name' | 'quantity' | 'category' | 'location' | 'notes'>

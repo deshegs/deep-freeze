@@ -11,6 +11,7 @@ import {
   useItems,
   type Item,
 } from '../lib/items'
+import { BackupScreen } from './BackupScreen'
 import { Freezer } from './Freezer'
 import { HouseholdScreen } from './HouseholdScreen'
 import { isOffline, useOnline } from '../lib/offline'
@@ -19,10 +20,19 @@ import { Menu } from './Menu'
 import { NameScreen } from './NameScreen'
 import { Onboarding } from './Onboarding'
 import { OutList } from './OutList'
+import { PrivacyScreen } from './PrivacyScreen'
 import { ShareScreen } from './ShareScreen'
 
 type Tab = 'freezer' | 'out'
-type Screen = 'main' | 'menu' | 'household' | 'another-household' | 'name' | 'share'
+type Screen =
+  | 'main'
+  | 'menu'
+  | 'household'
+  | 'another-household'
+  | 'name'
+  | 'share'
+  | 'backup'
+  | 'privacy'
 type Sheet = { item: Item | null } | null
 
 const MESSAGE_MS = 3000
@@ -95,6 +105,8 @@ export function Shell({
         yourName={profile?.name ?? ''}
         onOpenName={() => setScreen('name')}
         onOpenShare={() => setScreen('share')}
+        onOpenBackup={() => setScreen('backup')}
+        onOpenPrivacy={() => setScreen('privacy')}
         onSwitch={(householdId) => {
           onSwitch(householdId)
           setScreen('main')
@@ -118,6 +130,27 @@ export function Shell({
           setScreen('main')
           await onChanged()
         }}
+      />
+    )
+  }
+
+  if (screen === 'backup') {
+    return (
+      <BackupScreen
+        household={household}
+        items={items.filter((item) => !item.deleted_at)}
+        onRestored={reload}
+        onClose={() => setScreen('menu')}
+      />
+    )
+  }
+
+  if (screen === 'privacy') {
+    return (
+      <PrivacyScreen
+        households={households}
+        onOpenExport={() => setScreen('backup')}
+        onClose={() => setScreen('menu')}
       />
     )
   }
